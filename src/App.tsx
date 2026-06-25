@@ -68,6 +68,7 @@ const keyboardRows = [
   ['ㄈ', 'ㄌ', 'ㄏ', 'ㄒ', 'ㄖ', 'ㄙ', 'ㄩ', 'ㄝ', 'ㄡ', 'ㄥ', null],
 ]
 
+const confettiPieces = Array.from({ length: 18 }, (_, index) => index)
 const symbolByCharacter = new Map(symbols.map((item) => [item.symbol, item]))
 
 const levels = Array.from({ length: Math.ceil(symbols.length / LEVEL_STEP) }, (_, index) => {
@@ -136,6 +137,7 @@ function App() {
   const [showHint, setShowHint] = useState(false)
   const [target, setTarget] = useState<ZhuyinSymbol>(() => levels[stored.unlockedLevel].symbols[0])
   const [feedback, setFeedback] = useState('再生して、聞こえた注音を選ぶ')
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const level = levels[currentLevelIndex]
   const levelProgress = useMemo(() => {
@@ -224,6 +226,8 @@ function App() {
     }
     const levelWillClear = level.symbols.every((item) => (nextProgress[item.symbol] ?? 0) >= PASSING_POINTS)
     if (levelWillClear) {
+      setShowConfetti(true)
+      window.setTimeout(() => setShowConfetti(false), 650)
       return
     }
 
@@ -293,6 +297,14 @@ function App() {
         </aside>
 
         <section className="quiz-panel" aria-label="クイズ">
+          {showConfetti && (
+            <div className="confetti-burst" aria-hidden="true">
+              {confettiPieces.map((piece) => (
+                <span key={piece} />
+              ))}
+            </div>
+          )}
+
           <div className="quiz-head">
             <div>
               <p className="eyebrow">{level.title} · 候補 {level.size} 字</p>

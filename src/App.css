@@ -132,12 +132,175 @@ button {
 }
 
 .quiz-panel {
+  position: relative;
   min-width: 0;
   padding: 18px;
   border: 1px solid #d9e2ec;
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 18px 48px rgb(15 23 42 / 9%);
+}
+
+.confetti-burst {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.confetti-burst span {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  background: #f59e0b;
+  opacity: 0;
+  animation: confetti-pop 620ms ease-out forwards;
+}
+
+.confetti-burst span:nth-child(3n) {
+  background: #14b8a6;
+}
+
+.confetti-burst span:nth-child(3n + 1) {
+  background: #ef4444;
+}
+
+.confetti-burst span:nth-child(3n + 2) {
+  background: #3b82f6;
+}
+
+.confetti-burst span:nth-child(1) {
+  --x: -210px;
+  --y: -92px;
+  --r: -32deg;
+}
+
+.confetti-burst span:nth-child(2) {
+  --x: -164px;
+  --y: -132px;
+  --r: 48deg;
+}
+
+.confetti-burst span:nth-child(3) {
+  --x: -120px;
+  --y: -72px;
+  --r: 84deg;
+}
+
+.confetti-burst span:nth-child(4) {
+  --x: -84px;
+  --y: -148px;
+  --r: -72deg;
+}
+
+.confetti-burst span:nth-child(5) {
+  --x: -44px;
+  --y: -94px;
+  --r: 24deg;
+}
+
+.confetti-burst span:nth-child(6) {
+  --x: -12px;
+  --y: -154px;
+  --r: 112deg;
+}
+
+.confetti-burst span:nth-child(7) {
+  --x: 28px;
+  --y: -98px;
+  --r: -96deg;
+}
+
+.confetti-burst span:nth-child(8) {
+  --x: 66px;
+  --y: -144px;
+  --r: 38deg;
+}
+
+.confetti-burst span:nth-child(9) {
+  --x: 104px;
+  --y: -76px;
+  --r: -42deg;
+}
+
+.confetti-burst span:nth-child(10) {
+  --x: 144px;
+  --y: -130px;
+  --r: 76deg;
+}
+
+.confetti-burst span:nth-child(11) {
+  --x: 190px;
+  --y: -88px;
+  --r: -118deg;
+}
+
+.confetti-burst span:nth-child(12) {
+  --x: -188px;
+  --y: -18px;
+  --r: 62deg;
+}
+
+.confetti-burst span:nth-child(13) {
+  --x: -126px;
+  --y: 14px;
+  --r: -84deg;
+}
+
+.confetti-burst span:nth-child(14) {
+  --x: -58px;
+  --y: 22px;
+  --r: 44deg;
+}
+
+.confetti-burst span:nth-child(15) {
+  --x: 18px;
+  --y: 24px;
+  --r: -28deg;
+}
+
+.confetti-burst span:nth-child(16) {
+  --x: 86px;
+  --y: 12px;
+  --r: 108deg;
+}
+
+.confetti-burst span:nth-child(17) {
+  --x: 148px;
+  --y: -12px;
+  --r: -58deg;
+}
+
+.confetti-burst span:nth-child(18) {
+  --x: 212px;
+  --y: 20px;
+  --r: 92deg;
+}
+
+@keyframes confetti-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45) rotate(0deg);
+  }
+
+  16% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 48px)) scale(0.95) rotate(var(--r));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-burst {
+    display: none;
+  }
 }
 
 .quiz-head,

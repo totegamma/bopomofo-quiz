@@ -257,10 +257,11 @@ function App() {
     }
 
     const nextTarget = chooseNextTarget(level.symbols, nextProgress, target.symbol)
+    const nextDelay = correct ? 120 : 650
     window.setTimeout(() => {
       setTarget(nextTarget)
       speak(nextTarget)
-    }, 450)
+    }, nextDelay)
   }
 
   const goToLevel = (index: number) => {

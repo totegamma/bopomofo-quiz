@@ -300,11 +300,11 @@ function App() {
 
           <div className="new-guide" aria-label="このレベルで新しく増える文字のピンイン">
             {level.newSymbols.map((item) => (
-              <div className="guide-item" key={item.symbol}>
+              <button className="guide-item" key={item.symbol} onClick={() => speak(item)} type="button">
                 <strong>{item.symbol}</strong>
                 <span>{item.pinyin}</span>
                 <small>{item.example}</small>
-              </div>
+              </button>
             ))}
           </div>
 

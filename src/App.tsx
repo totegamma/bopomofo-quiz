@@ -222,6 +222,11 @@ function App() {
       [target.symbol]: clampProgress((levelProgress[target.symbol] ?? 0) + (correct ? 25 : 5)),
       ...(correct ? {} : { [answer.symbol]: clampProgress((levelProgress[answer.symbol] ?? 0) - 10) }),
     }
+    const levelWillClear = level.symbols.every((item) => (nextProgress[item.symbol] ?? 0) >= PASSING_POINTS)
+    if (levelWillClear) {
+      return
+    }
+
     const nextTarget = chooseNextTarget(level.symbols, nextProgress, target.symbol)
     window.setTimeout(() => {
       setTarget(nextTarget)

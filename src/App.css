@@ -154,6 +154,43 @@ button {
   border-bottom: 1px solid #e5edf4;
 }
 
+.new-guide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.guide-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  align-items: center;
+  min-height: 58px;
+  padding: 9px 11px;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+}
+
+.guide-item strong {
+  grid-row: span 2;
+  color: #92400e;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.guide-item span {
+  color: #78350f;
+  font-weight: 900;
+}
+
+.guide-item small {
+  color: #a16207;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .ghost-button {
   min-height: 40px;
   padding: 0 14px;
@@ -225,36 +262,61 @@ button {
   accent-color: #0f766e;
 }
 
-.answer-grid {
+.keyboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(11, minmax(58px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .answer-key {
   display: grid;
-  grid-template-rows: auto auto 8px auto;
-  gap: 8px;
-  min-height: 164px;
-  padding: 14px;
+  grid-template-rows: 1fr 7px auto;
+  gap: 7px;
+  align-items: end;
+  min-height: 96px;
+  padding: 10px 8px;
   border: 1px solid #d9e2ec;
   border-radius: 8px;
   background: #ffffff;
   color: #111827;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition:
     border-color 140ms ease,
     transform 140ms ease,
     box-shadow 140ms ease;
 }
 
-.answer-key:hover,
+.answer-key.available:hover,
 .level-pill:not(:disabled):hover,
 .ghost-button:hover {
   border-color: #0f766e;
   box-shadow: 0 10px 24px rgb(15 118 110 / 13%);
   transform: translateY(-1px);
+}
+
+.answer-key.unavailable,
+.answer-key.tone-key {
+  border-color: #d7dee7;
+  background: #eef2f6;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.answer-key.tone-key {
+  background: #f6f8fb;
+  color: #c0cad7;
+}
+
+.answer-key.new-key {
+  border-color: #f59e0b;
+  background: #fffaf0;
+}
+
+.keyboard-spacer {
+  min-height: 96px;
 }
 
 .answer-key:focus-visible,
@@ -267,24 +329,10 @@ button {
 }
 
 .symbol {
-  font-size: 3rem;
+  align-self: center;
+  font-size: 2.35rem;
   font-weight: 900;
   line-height: 1;
-}
-
-.key-detail {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  color: #475569;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.key-detail span {
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: #edf3f7;
 }
 
 .progress-track {
@@ -305,8 +353,9 @@ button {
 
 .progress-label {
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 900;
+  line-height: 1.1;
 }
 
 .clear-strip {
@@ -446,16 +495,16 @@ button {
     padding: 12px;
   }
 
-  .answer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .keyboard-grid {
+    grid-template-columns: repeat(11, 54px);
   }
 
   .answer-key {
-    min-height: 150px;
-    padding: 12px;
+    min-height: 88px;
+    padding: 9px 6px;
   }
 
   .symbol {
-    font-size: 2.6rem;
+    font-size: 2rem;
   }
 }

@@ -21,13 +21,6 @@ const PASSING_POINTS = 100
 const REVIEW_START_POINTS = 50
 const LEVEL_STEP = 2
 
-const categoryLabels: Record<SymbolCategory, string> = {
-  initial: '声母',
-  final: '韻母',
-  medial: '介音',
-  special: '特殊',
-}
-
 const symbols: ZhuyinSymbol[] = [
   { symbol: 'ㄧ', pinyin: 'i / yi', example: '一 yi', category: 'medial', note: '高頻度の母音・介音' },
   { symbol: 'ㄨ', pinyin: 'u / wu', example: '五 wu', category: 'medial', note: '高頻度の母音・介音' },
@@ -67,6 +60,15 @@ const symbols: ZhuyinSymbol[] = [
   { symbol: 'ㄏ', pinyin: 'h', example: '和 he', category: 'initial', note: '軟口蓋摩擦音' },
   { symbol: 'ㄦ', pinyin: 'er', example: '二 er', category: 'special', note: '最後に扱う特殊な韻母' },
 ]
+
+const keyboardRows = [
+  ['ㄅ', 'ㄉ', 'ˇ', 'ˋ', 'ㄓ', 'ˊ', '˙', 'ㄚ', 'ㄞ', 'ㄢ', 'ㄦ'],
+  ['ㄆ', 'ㄊ', 'ㄍ', 'ㄐ', 'ㄔ', 'ㄗ', 'ㄧ', 'ㄛ', 'ㄟ', 'ㄣ', null],
+  ['ㄇ', 'ㄋ', 'ㄎ', 'ㄑ', 'ㄕ', 'ㄘ', 'ㄨ', 'ㄜ', 'ㄠ', 'ㄤ', null],
+  ['ㄈ', 'ㄌ', 'ㄏ', 'ㄒ', 'ㄖ', 'ㄙ', 'ㄩ', 'ㄝ', 'ㄡ', 'ㄥ', null],
+]
+
+const symbolByCharacter = new Map(symbols.map((item) => [item.symbol, item]))
 
 const levels = Array.from({ length: Math.ceil(symbols.length / LEVEL_STEP) }, (_, index) => {
   const size = Math.min((index + 1) * LEVEL_STEP, symbols.length)
@@ -296,6 +298,16 @@ function App() {
             </button>
           </div>
 
+          <div className="new-guide" aria-label="このレベルで新しく増える文字のピンイン">
+            {level.newSymbols.map((item) => (
+              <div className="guide-item" key={item.symbol}>
+                <strong>{item.symbol}</strong>
+                <span>{item.pinyin}</span>
+                <small>{item.example}</small>
+              </div>
+            ))}
+          </div>
+
           <div className="listen-area">
             <button className="play-button" onClick={() => speak()} type="button" aria-label="問題の音声を再生">
               <span className="play-icon">▶</span>
@@ -315,27 +327,55 @@ function App() {
             </label>
           </div>
 
-          <div className="answer-grid" aria-label="回答候補">
-            {level.symbols.map((item) => {
-              const points = levelProgress[item.symbol] ?? 0
-              const isNew = level.newSymbols.some((newItem) => newItem.symbol === item.symbol)
+          <div className="keyboard-grid" aria-label="注音キーボード">
+            {keyboardRows.flatMap((row, rowIndex) =>
+              row.map((character) => {
+                if (character === null) {
+                  return <div className="keyboard-spacer" key={`${rowIndex}-spacer`} />
+                }
 
-              return (
-                <button className="answer-key" key={item.symbol} onClick={() => handleAnswer(item)} type="button">
-                  <span className="symbol">{item.symbol}</span>
-                  <span className="key-detail">
-                    <span>{item.pinyin}</span>
-                    <span>{categoryLabels[item.category]}</span>
-                  </span>
-                  <span className="progress-track" aria-label={`${item.symbol} の進捗 ${points}%`}>
-                    <span style={{ width: `${points}%` }} />
-                  </span>
-                  <span className="progress-label">
-                    {points}%{isNew ? ' · new' : ''}
-                  </span>
-                </button>
-              )
-            })}
+                const item = symbolByCharacter.get(character)
+                const points = item ? (levelProgress[item.symbol] ?? 0) : 0
+                const isAvailable = Boolean(item && level.symbols.some((levelItem) => levelItem.symbol === item.symbol))
+                const isNew = Boolean(item && level.newSymbols.some((newItem) => newItem.symbol === item.symbol))
+
+                if (!item) {
+                  return (
+                    <button
+                      aria-label={`${character} は声調キーです`}
+                      className="answer-key tone-key"
+                      disabled
+                      key={`${rowIndex}-${character}`}
+                      type="button"
+                    >
+                      <span className="symbol">{character}</span>
+                    </button>
+                  )
+                }
+
+                return (
+                  <button
+                    className={`answer-key ${isAvailable ? 'available' : 'unavailable'} ${isNew ? 'new-key' : ''}`}
+                    disabled={!isAvailable}
+                    key={item.symbol}
+                    onClick={() => handleAnswer(item)}
+                    type="button"
+                  >
+                    <span className="symbol">{item.symbol}</span>
+                    {isAvailable && (
+                      <>
+                        <span className="progress-track" aria-label={`${item.symbol} の進捗 ${points}%`}>
+                          <span style={{ width: `${points}%` }} />
+                        </span>
+                        <span className="progress-label">
+                          {points}%{isNew ? ' · new' : ''}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )
+              }),
+            )}
           </div>
 
           {isLevelClear && (

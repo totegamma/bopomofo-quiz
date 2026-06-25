@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
 type SymbolCategory = 'initial' | 'final' | 'medial' | 'special'
@@ -138,6 +138,9 @@ function App() {
   const [target, setTarget] = useState<ZhuyinSymbol>(() => levels[stored.unlockedLevel].symbols[0])
   const [feedback, setFeedback] = useState('再生して、聞こえた注音を選ぶ')
   const [showConfetti, setShowConfetti] = useState(false)
+  const [highlightedCorrect, setHighlightedCorrect] = useState<string | null>(null)
+  const storedRef = useRef(stored)
+  const highlightTimerRef = useRef<number | null>(null)
 
   const level = levels[currentLevelIndex]
   const levelProgress = useMemo(() => {
@@ -152,14 +155,24 @@ function App() {
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
+    storedRef.current = stored
   }, [stored])
 
   useEffect(() => {
-    const progress = stored.levels[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
+    const progress = storedRef.current.levels[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
     const next = chooseNextTarget(levels[currentLevelIndex].symbols, progress)
     setTarget(next)
     setFeedback('再生して、聞こえた注音を選ぶ')
-  }, [currentLevelIndex, stored.levels])
+    setHighlightedCorrect(null)
+  }, [currentLevelIndex])
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current)
+      }
+    }
+  }, [])
 
   const updateLevelProgress = (updater: (progress: Record<string, number>) => Record<string, number>) => {
     setStored((current) => {
@@ -218,6 +231,18 @@ function App() {
         ? `${target.symbol} 正解。${target.pinyin}`
         : `正解は ${target.symbol}。選んだのは ${answer.symbol}`,
     )
+
+    if (highlightTimerRef.current !== null) {
+      window.clearTimeout(highlightTimerRef.current)
+    }
+
+    setHighlightedCorrect(correct ? null : target.symbol)
+    if (!correct) {
+      highlightTimerRef.current = window.setTimeout(() => {
+        setHighlightedCorrect(null)
+        highlightTimerRef.current = null
+      }, 1100)
+    }
 
     const nextProgress = {
       ...levelProgress,
@@ -372,7 +397,9 @@ function App() {
 
                 return (
                   <button
-                    className={`answer-key ${isAvailable ? 'available' : 'unavailable'} ${isNew ? 'new-key' : ''}`}
+                    className={`answer-key ${isAvailable ? 'available' : 'unavailable'} ${isNew ? 'new-key' : ''} ${
+                      highlightedCorrect === item.symbol ? 'correct-highlight' : ''
+                    }`}
                     disabled={!isAvailable}
                     key={item.symbol}
                     onClick={() => handleAnswer(item)}

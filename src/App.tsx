@@ -101,9 +101,13 @@ const normalizeCompletedLevels = (completedLevels: number[]) =>
     ),
   ).sort((a, b) => a - b)
 
-const getFirstIncompleteLevelIndex = (completedLevels: number[]) => {
-  const completed = new Set(completedLevels)
-  return levels.find((level) => !completed.has(level.id))?.id ?? 0
+const getNextLevelIndex = (completedLevels: number[]) => {
+  if (completedLevels.length === 0) {
+    return 0
+  }
+
+  const maxCompletedLevel = Math.max(...completedLevels)
+  return Math.min(maxCompletedLevel + 1, levels.length - 1)
 }
 
 const loadStoredState = (): StoredState => {
@@ -154,7 +158,7 @@ const getVoice = () =>
 
 function App() {
   const [stored, setStored] = useState<StoredState>(() => loadStoredState())
-  const initialLevelIndex = getFirstIncompleteLevelIndex(stored.completedLevels)
+  const initialLevelIndex = getNextLevelIndex(stored.completedLevels)
   const [currentLevelIndex, setCurrentLevelIndex] = useState(initialLevelIndex)
   const [sessionProgress, setSessionProgress] = useState<Record<string, Record<string, number>>>({})
   const [showHint, setShowHint] = useState(false)

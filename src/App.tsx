@@ -19,6 +19,8 @@ const STORAGE_KEY = 'bopomofo-quiz-progress'
 const PASSING_POINTS = 100
 const REVIEW_POINTS_PER_STAGE = 10
 const MAX_REVIEW_START_POINTS = 90
+const COMPLETED_REVIEW_RATIO_PER_SYMBOL = 0.5
+const MAX_COMPLETED_REVIEW_CHANCE = 0.49
 const LEVEL_STEP = 2
 
 const symbols: ZhuyinSymbol[] = [
@@ -145,10 +147,18 @@ const clampProgress = (value: number) => Math.min(PASSING_POINTS, Math.max(0, va
 
 const chooseNextTarget = (levelSymbols: ZhuyinSymbol[], progress: Record<string, number>, previous?: string) => {
   const incomplete = levelSymbols.filter((item) => (progress[item.symbol] ?? 0) < PASSING_POINTS)
-  const pool = incomplete.length > 0 ? incomplete : levelSymbols
+  const completed = levelSymbols.filter((item) => (progress[item.symbol] ?? 0) >= PASSING_POINTS)
+  const chancePerCompletedSymbol = COMPLETED_REVIEW_RATIO_PER_SYMBOL / levelSymbols.length
+  const completedReviewChance = Math.min(
+    completed.length * chancePerCompletedSymbol,
+    MAX_COMPLETED_REVIEW_CHANCE,
+  )
+  const shouldReviewCompleted =
+    incomplete.length > 0 && completed.length > 0 && Math.random() < completedReviewChance
+  const pool = shouldReviewCompleted ? completed : incomplete.length > 0 ? incomplete : levelSymbols
   const weighted = pool.flatMap((item) => {
     const points = progress[item.symbol] ?? 0
-    const weight = Math.max(1, Math.ceil((PASSING_POINTS - points) / 20))
+    const weight = points >= PASSING_POINTS ? 1 : Math.max(1, Math.ceil((PASSING_POINTS - points) / 20))
     return Array.from({ length: item.symbol === previous && pool.length > 1 ? 1 : weight }, () => item)
   })
 

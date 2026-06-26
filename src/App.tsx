@@ -11,9 +11,8 @@ type ZhuyinSymbol = {
   note: string
 }
 
-type StoredProgress = {
-  unlockedLevel: number
-  levels: Record<string, Record<string, number>>
+type StoredState = {
+  completedLevels: number[]
 }
 
 const STORAGE_KEY = 'bopomofo-quiz-progress'
@@ -95,20 +94,42 @@ const createInitialProgress = (levelIndex: number) => {
   )
 }
 
-const loadProgress = (): StoredProgress => {
+const normalizeCompletedLevels = (completedLevels: number[]) =>
+  Array.from(
+    new Set(
+      completedLevels.filter((levelIndex) => Number.isInteger(levelIndex) && levelIndex >= 0 && levelIndex < levels.length),
+    ),
+  ).sort((a, b) => a - b)
+
+const getFirstIncompleteLevelIndex = (completedLevels: number[]) => {
+  const completed = new Set(completedLevels)
+  return levels.find((level) => !completed.has(level.id))?.id ?? 0
+}
+
+const loadStoredState = (): StoredState => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) {
-      return { unlockedLevel: 0, levels: {} }
+      return { completedLevels: [] }
     }
 
-    const parsed = JSON.parse(raw) as StoredProgress
-    return {
-      unlockedLevel: Math.min(parsed.unlockedLevel ?? 0, levels.length - 1),
-      levels: parsed.levels ?? {},
+    const parsed = JSON.parse(raw) as Partial<StoredState> & {
+      levels?: Record<string, Record<string, number>>
     }
+    if (Array.isArray(parsed.completedLevels)) {
+      return { completedLevels: normalizeCompletedLevels(parsed.completedLevels) }
+    }
+
+    const migratedCompletedLevels = Object.entries(parsed.levels ?? {})
+      .filter(([levelIndex, progress]) => {
+        const level = levels[Number(levelIndex)]
+        return Boolean(level && level.symbols.every((item) => (progress[item.symbol] ?? 0) >= PASSING_POINTS))
+      })
+      .map(([levelIndex]) => Number(levelIndex))
+
+    return { completedLevels: normalizeCompletedLevels(migratedCompletedLevels) }
   } catch {
-    return { unlockedLevel: 0, levels: {} }
+    return { completedLevels: [] }
   }
 }
 
@@ -132,20 +153,22 @@ const getVoice = () =>
     .find((voice) => voice.lang.toLowerCase().startsWith('zh-tw') || voice.lang.toLowerCase().startsWith('zh'))
 
 function App() {
-  const [stored, setStored] = useState<StoredProgress>(() => loadProgress())
-  const [currentLevelIndex, setCurrentLevelIndex] = useState(() => stored.unlockedLevel)
+  const [stored, setStored] = useState<StoredState>(() => loadStoredState())
+  const initialLevelIndex = getFirstIncompleteLevelIndex(stored.completedLevels)
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(initialLevelIndex)
+  const [sessionProgress, setSessionProgress] = useState<Record<string, Record<string, number>>>({})
   const [showHint, setShowHint] = useState(false)
-  const [target, setTarget] = useState<ZhuyinSymbol>(() => levels[stored.unlockedLevel].symbols[0])
+  const [target, setTarget] = useState<ZhuyinSymbol>(() => levels[initialLevelIndex].symbols[0])
   const [feedback, setFeedback] = useState('再生して、聞こえた注音を選ぶ')
   const [showConfetti, setShowConfetti] = useState(false)
   const [highlightedCorrect, setHighlightedCorrect] = useState<string | null>(null)
-  const storedRef = useRef(stored)
+  const sessionProgressRef = useRef(sessionProgress)
   const highlightTimerRef = useRef<number | null>(null)
 
   const level = levels[currentLevelIndex]
   const levelProgress = useMemo(() => {
-    return stored.levels[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
-  }, [currentLevelIndex, stored.levels])
+    return sessionProgress[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
+  }, [currentLevelIndex, sessionProgress])
 
   const completedCount = level.symbols.filter((item) => (levelProgress[item.symbol] ?? 0) >= PASSING_POINTS).length
   const isLevelClear = completedCount === level.symbols.length
@@ -155,11 +178,14 @@ function App() {
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
-    storedRef.current = stored
   }, [stored])
 
   useEffect(() => {
-    const progress = storedRef.current.levels[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
+    sessionProgressRef.current = sessionProgress
+  }, [sessionProgress])
+
+  useEffect(() => {
+    const progress = sessionProgressRef.current[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
     const next = chooseNextTarget(levels[currentLevelIndex].symbols, progress)
     setTarget(next)
     setFeedback('再生して、聞こえた注音を選ぶ')
@@ -175,20 +201,11 @@ function App() {
   }, [])
 
   const updateLevelProgress = (updater: (progress: Record<string, number>) => Record<string, number>) => {
-    setStored((current) => {
-      const base = current.levels[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
-      const nextProgress = updater(base)
-      const nextUnlocked =
-        Object.values(nextProgress).every((value) => value >= PASSING_POINTS) && currentLevelIndex === current.unlockedLevel
-          ? Math.min(current.unlockedLevel + 1, levels.length - 1)
-          : current.unlockedLevel
-
+    setSessionProgress((current) => {
+      const base = current[currentLevelIndex] ?? createInitialProgress(currentLevelIndex)
       return {
-        unlockedLevel: nextUnlocked,
-        levels: {
-          ...current.levels,
-          [currentLevelIndex]: nextProgress,
-        },
+        ...current,
+        [currentLevelIndex]: updater(base),
       }
     })
   }
@@ -251,6 +268,9 @@ function App() {
     }
     const levelWillClear = level.symbols.every((item) => (nextProgress[item.symbol] ?? 0) >= PASSING_POINTS)
     if (levelWillClear) {
+      setStored((current) => ({
+        completedLevels: normalizeCompletedLevels([...current.completedLevels, currentLevelIndex]),
+      }))
       setShowConfetti(true)
       window.setTimeout(() => setShowConfetti(false), 650)
       return
@@ -265,18 +285,13 @@ function App() {
   }
 
   const goToLevel = (index: number) => {
-    if (index <= stored.unlockedLevel) {
-      setCurrentLevelIndex(index)
-    }
+    setCurrentLevelIndex(index)
   }
 
   const resetLevel = () => {
-    setStored((current) => ({
+    setSessionProgress((current) => ({
       ...current,
-      levels: {
-        ...current.levels,
-        [currentLevelIndex]: createInitialProgress(currentLevelIndex),
-      },
+      [currentLevelIndex]: createInitialProgress(currentLevelIndex),
     }))
   }
 
@@ -301,22 +316,21 @@ function App() {
       <section className="study-layout">
         <aside className="level-rail" aria-label="レベル一覧">
           {levels.map((item) => {
-            const locked = item.id > stored.unlockedLevel
-            const levelPoints = stored.levels[item.id] ?? createInitialProgress(item.id)
-            const percent = Math.round(
-              item.symbols.reduce((sum, symbol) => sum + (levelPoints[symbol.symbol] ?? 0), 0) / item.symbols.length,
-            )
+            const completed = stored.completedLevels.includes(item.id)
 
             return (
               <button
                 className={`level-pill ${item.id === currentLevelIndex ? 'active' : ''}`}
-                disabled={locked}
                 key={item.id}
                 onClick={() => goToLevel(item.id)}
                 type="button"
+                aria-label={`${item.title}${completed ? ' クリア済み' : ''}`}
               >
-                <span>{item.title}</span>
-                <small>{locked ? 'locked' : `${item.size}字 / ${percent}%`}</small>
+                <span className="level-title-row">
+                  <span>{item.title}</span>
+                  {completed && <span className="level-check" aria-hidden="true">✓</span>}
+                </span>
+                <small>{item.newSymbols.map((symbol) => symbol.symbol).join(' ')}</small>
               </button>
             )
           })}

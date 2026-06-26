@@ -110,13 +110,35 @@ button {
   text-align: left;
 }
 
-.level-pill span {
+.level-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.level-title-row > span:first-child {
   font-weight: 800;
+}
+
+.level-check {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .level-pill small {
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .level-pill.active {

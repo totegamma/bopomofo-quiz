@@ -17,7 +17,8 @@ type StoredState = {
 
 const STORAGE_KEY = 'bopomofo-quiz-progress'
 const PASSING_POINTS = 100
-const REVIEW_START_POINTS = 50
+const REVIEW_POINTS_PER_STAGE = 10
+const MAX_REVIEW_START_POINTS = 90
 const LEVEL_STEP = 2
 
 const symbols: ZhuyinSymbol[] = [
@@ -87,10 +88,13 @@ const createInitialProgress = (levelIndex: number) => {
   const level = levels[levelIndex]
 
   return Object.fromEntries(
-    level.symbols.map((item) => [
-      item.symbol,
-      level.newSymbols.some((newItem) => newItem.symbol === item.symbol) ? 0 : REVIEW_START_POINTS,
-    ]),
+    level.symbols.map((item) => {
+      const introducedLevelIndex = Math.floor(symbols.findIndex((symbol) => symbol.symbol === item.symbol) / LEVEL_STEP)
+      const reviewAge = levelIndex - introducedLevelIndex
+      const initialPoints = Math.min(reviewAge * REVIEW_POINTS_PER_STAGE, MAX_REVIEW_START_POINTS)
+
+      return [item.symbol, initialPoints]
+    }),
   )
 }
 
